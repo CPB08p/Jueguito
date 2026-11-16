@@ -1,0 +1,10 @@
+# Archivos que Git NO debe guardar ni subir a GitHub
+
+# Lo que crea PyInstaller al hacer el .exe (se puede volver a crear)
+build/
+dist/
+*.spec
+
+# Archivos temporales que crea Python solo
+__pycache__/
+*.pyc
