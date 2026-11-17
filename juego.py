@@ -24,7 +24,12 @@ ALTO_HUD = 100  # alto de la franja de arriba (textos y barra)
 BARRA_STAMINA_ANCHO = 200  # ancho de la barra de stamina cuando está llena
 BARRA_STAMINA_ALTO = 15  # alto de la barra de stamina
 BARRA_FONDO_COLOR = (80, 80, 80)  # gris: el "fondo" de la barra
-
+DESCRIPCION = [
+    "Flechas: mover",
+    "Shift: correr (gasta stamina)",
+    "Atrapa todas las monedas antes de que se acabe el tiempo",
+]
+YDESC_TEXTO = 380
 # Colores del jugador y de la barra según la stamina (tipo semáforo)
 COLOR_STAMINA_ALTA = (0, 255, 0)  # verde
 COLOR_STAMINA_MEDIA = (255, 255, 0)  # amarillo
@@ -43,6 +48,8 @@ pantalla = pygame.display.set_mode((ANCHO, ALTO))  # crea la ventana
 pygame.display.set_caption("Circulo que se mueve con las flechitas")  # título
 reloj = pygame.time.Clock()  # controla la velocidad del juego (FPS)
 fuente = pygame.font.Font(None, 36)  # letra por defecto, tamaño 36
+titulo_fuente = pygame.font.Font(None, 72)  # letra por defecto, tamaño 72
+
 
 # Posición inicial del jugador: el centro de la pantalla
 x, y = ANCHO // 2, ALTO // 2
@@ -73,13 +80,32 @@ while corriendo:
     teclas = pygame.key.get_pressed()
 
     if estado == "menu":
-
+        parpadeo = (pygame.time.get_ticks() // 500) % 2
         pantalla.fill((0, 0, 0))  # fondo negro
+        titulo = titulo_fuente.render("CIRCULO QUE SE MUEVE", True, (255, 201, 15))
         texto = fuente.render("PRESIONA ESPACIO PARA JUGAR", True, (255, 255, 255))
-        pantalla.blit(
-            texto,
-            (ANCHO // 2 - texto.get_width() // 2, ALTO // 2 - texto.get_height() // 2),
-        )
+        for i, linea in enumerate(DESCRIPCION):
+            texto_linea = fuente.render(linea, True, (180, 180, 180))
+            pantalla.blit(
+                texto_linea,
+                (ANCHO // 2 - texto_linea.get_width() // 2, YDESC_TEXTO + i * 40),
+            )
+
+            pantalla.blit(
+                titulo,
+                (
+                    ANCHO // 2 - titulo.get_width() // 2,
+                    ALTO // 4 - titulo.get_height() // 2,
+                ),
+            )
+        if parpadeo == 0:
+            pantalla.blit(
+                texto,
+                (
+                    ANCHO // 2 - texto.get_width() // 2,
+                    ALTO // 2 - texto.get_height() // 2,
+                ),
+            )
         if teclas[pygame.K_SPACE]:
             estado = "jugando"
             puntos = 0
@@ -212,7 +238,6 @@ while corriendo:
         # Reiniciar: todo vuelve a como estaba al empezar
         if teclas[pygame.K_r]:
             estado = "menu"
-            
 
     pygame.display.flip()  # muestra en la ventana todo lo que se dibujó
     reloj.tick(60)  # espera lo necesario para ir a 60 vueltas por segundo
