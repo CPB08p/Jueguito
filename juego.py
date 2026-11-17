@@ -2,7 +2,7 @@
 #  ATRAPA MONEDAS
 #  Mueve la bolita con las flechas, corre con Shift (gasta stamina)
 #  y atrapa todas las monedas que puedas antes de que se acabe el tiempo.
-#  Version 1.0, 2026-16-11
+#  Version 1.0, 2026-11-16
 # =============================================================
 
 import pygame  # librería para hacer juegos (ventana, dibujos, teclado...)
@@ -34,7 +34,6 @@ COLOR_STAMINA_BAJA = (255, 0, 0)  # rojo
 #  VARIABLES (en minúsculas porque SÍ cambian durante el juego)
 # -------------------------------------------------------------
 stamina_jugador = STAMINA_MAX  # empieza con la stamina llena
-inicio_tiempo = pygame.time.get_ticks()  # "anota la hora" en que empezó la partida
 puntos = 0  # monedas atrapadas
 
 # -------------------------------------------------------------
@@ -59,110 +58,135 @@ moneda_y = random.randint(ALTO_HUD + RADIO_MONEDA, ALTO - RADIO_MONEDA)
 #  En cada vuelta: 1) eventos  2) lógica  3) dibujo
 # =============================================================
 corriendo = True
-while corriendo:
+estado = "menu"
 
+while corriendo:
     # ---------------------------------------------------------
     #  1. EVENTOS
     # ---------------------------------------------------------
+
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:  # si le dan a la X de la ventana
             corriendo = False  # el while termina y el juego se cierra
 
-    # ---------------------------------------------------------
-    #  2. LÓGICA
-    # ---------------------------------------------------------
-
-    # --- Tiempo ---
-    # hora de AHORA - hora de INICIO = milisegundos jugados; // 1000 = segundos
-    segundos_jugados = (pygame.time.get_ticks() - inicio_tiempo) // 1000
-    tiempo_restante = TIEMPO_LIMITE - segundos_jugados
-
     # Qué teclas están apretadas en este momento
     teclas = pygame.key.get_pressed()
 
-    # --- Stamina ---
-    # Solo puede correr si aprieta Shift Y le queda stamina
-    if teclas[pygame.K_LSHIFT] and stamina_jugador > 0:
-        velocidad = 10  # corriendo
-        # Gasta stamina, pero max(..., 0) evita que baje de 0
-        stamina_jugador = max(stamina_jugador - 1, 0)
-    else:
-        velocidad = 3  # caminando
-        # Recupera stamina poco a poco, pero min(..., MAX) evita que pase del máximo
-        stamina_jugador = min(stamina_jugador + 0.3, STAMINA_MAX)
+    if estado == "menu":
 
-    # --- Color según la stamina (semáforo) ---
-    # El orden importa: primero se pregunta por el número más alto
-    if stamina_jugador >= 50:
-        color_stamina = COLOR_STAMINA_ALTA
-    elif stamina_jugador >= 25:
-        color_stamina = COLOR_STAMINA_MEDIA
-    else:
-        color_stamina = COLOR_STAMINA_BAJA
+        pantalla.fill((0, 0, 0))  # fondo negro
+        texto = fuente.render("PRESIONA ESPACIO PARA JUGAR", True, (255, 255, 255))
+        pantalla.blit(
+            texto,
+            (ANCHO // 2 - texto.get_width() // 2, ALTO // 2 - texto.get_height() // 2),
+        )
+        if teclas[pygame.K_SPACE]:
+            estado = "jugando"
+            puntos = 0
+            stamina_jugador = STAMINA_MAX
+            x, y = ANCHO // 2, ALTO // 2
+            inicio_tiempo = pygame.time.get_ticks()  # el cronómetro vuelve a empezar
 
-    # --- Movimiento (solo mientras quede tiempo) ---
-    # Ojo: en pygame la "y" crece hacia ABAJO, por eso arriba es "y -="
-    if tiempo_restante > 0:
-        if teclas[pygame.K_LEFT]:
-            x -= velocidad
-        if teclas[pygame.K_RIGHT]:
-            x += velocidad
-        if teclas[pygame.K_UP]:
-            y -= velocidad
-        if teclas[pygame.K_DOWN]:
-            y += velocidad
+    elif estado == "jugando":
 
-    # --- Choque con la moneda ---
-    # Distancia entre los centros del jugador y la moneda (Pitágoras)
-    distancia = math.hypot(x - moneda_x, y - moneda_y)
-    # Si están más cerca que la suma de los radios, se están tocando
-    if distancia < RADIO + RADIO_MONEDA:
-        # La moneda aparece en otro lugar al azar (debajo del HUD)
-        moneda_x = random.randint(RADIO_MONEDA, ANCHO - RADIO_MONEDA)
-        moneda_y = random.randint(ALTO_HUD + RADIO_MONEDA, ALTO - RADIO_MONEDA)
-        puntos += 1
-        # Premio: cada moneda devuelve 10 de stamina (sin pasar del máximo)
-        stamina_jugador = min(stamina_jugador + 10, STAMINA_MAX)
+        # ---------------------------------------------------------
+        #  2. LÓGICA
+        # ---------------------------------------------------------
 
-    # --- Bordes ---
-    # Que el jugador no se salga de la pantalla ni se meta en el HUD
-    x = max(RADIO, min(ANCHO - RADIO, x))
-    y = max(ALTO_HUD + RADIO, min(ALTO - RADIO, y))
+        # --- Tiempo ---
+        # hora de AHORA - hora de INICIO = milisegundos jugados; // 1000 = segundos
+        segundos_jugados = (pygame.time.get_ticks() - inicio_tiempo) // 1000
+        tiempo_restante = TIEMPO_LIMITE - segundos_jugados
 
-    # ---------------------------------------------------------
-    #  3. DIBUJO (el orden importa: lo último se dibuja ENCIMA)
-    # ---------------------------------------------------------
-    pantalla.fill((0, 128, 64))  # fondo verde: borra todo lo de la vuelta anterior
+        # --- Stamina ---
+        # Solo puede correr si aprieta Shift Y le queda stamina
+        if teclas[pygame.K_LSHIFT] and stamina_jugador > 0:
+            velocidad = 10  # corriendo
+            # Gasta stamina, pero max(..., 0) evita que baje de 0
+            stamina_jugador = max(stamina_jugador - 1, 0)
+        else:
+            velocidad = 3  # caminando
+            # Recupera stamina poco a poco, pero min(..., MAX) evita que pase del máximo
+            stamina_jugador = min(stamina_jugador + 0.3, STAMINA_MAX)
 
-    # Franja negra del HUD: (x, y, ancho, alto)
-    pygame.draw.rect(pantalla, (0, 0, 0), (0, 0, ANCHO, ALTO_HUD))
+        # --- Color según la stamina (semáforo) ---
+        # El orden importa: primero se pregunta por el número más alto
+        if stamina_jugador >= 50:
+            color_stamina = COLOR_STAMINA_ALTA
+        elif stamina_jugador >= 25:
+            color_stamina = COLOR_STAMINA_MEDIA
+        else:
+            color_stamina = COLOR_STAMINA_BAJA
 
-    # Barra de stamina: primero el fondo gris (siempre completo)...
-    pygame.draw.rect(
-        pantalla, BARRA_FONDO_COLOR, (10, 80, BARRA_STAMINA_ANCHO, BARRA_STAMINA_ALTO)
-    )
-    # ...y encima la parte de color. Su ancho es proporcional a la stamina:
-    # (stamina / máximo) da un número entre 0 y 1, y eso por el ancho total
-    ancho_stamina = (stamina_jugador / STAMINA_MAX) * BARRA_STAMINA_ANCHO
-    pygame.draw.rect(
-        pantalla, color_stamina, (10, 80, ancho_stamina, BARRA_STAMINA_ALTO)
-    )
+        # --- Movimiento (solo mientras quede tiempo) ---
+        # Ojo: en pygame la "y" crece hacia ABAJO, por eso arriba es "y -="
+        if tiempo_restante > 0:
+            if teclas[pygame.K_LEFT]:
+                x -= velocidad
+            if teclas[pygame.K_RIGHT]:
+                x += velocidad
+            if teclas[pygame.K_UP]:
+                y -= velocidad
+            if teclas[pygame.K_DOWN]:
+                y += velocidad
 
-    # Moneda y jugador
-    pygame.draw.circle(pantalla, MONEDA_COLOR, (moneda_x, moneda_y), RADIO_MONEDA)
-    pygame.draw.circle(pantalla, color_stamina, (x, y), RADIO)
+        # --- Choque con la moneda ---
+        # Distancia entre los centros del jugador y la moneda (Pitágoras)
+        distancia = math.hypot(x - moneda_x, y - moneda_y)
+        # Si están más cerca que la suma de los radios, se están tocando
+        if distancia < RADIO + RADIO_MONEDA:
+            # La moneda aparece en otro lugar al azar (debajo del HUD)
+            moneda_x = random.randint(RADIO_MONEDA, ANCHO - RADIO_MONEDA)
+            moneda_y = random.randint(ALTO_HUD + RADIO_MONEDA, ALTO - RADIO_MONEDA)
+            puntos += 1
+            # Premio: cada moneda devuelve 10 de stamina (sin pasar del máximo)
+            stamina_jugador = min(stamina_jugador + 10, STAMINA_MAX)
 
-    # Textos: render convierte el texto en imagen; blit la pega en la pantalla.
-    # str() convierte el número en texto para poder unirlo con "Puntos: "
-    texto = fuente.render("Puntos: " + str(puntos), True, (255, 255, 255))
-    texto_tiempo = fuente.render(
-        "Tiempo: " + str(tiempo_restante), True, (255, 255, 255)
-    )
-    pantalla.blit(texto, (10, 10))
-    pantalla.blit(texto_tiempo, (10, 50))
+        # --- Bordes ---
+        # Que el jugador no se salga de la pantalla ni se meta en el HUD
+        x = max(RADIO, min(ANCHO - RADIO, x))
+        y = max(ALTO_HUD + RADIO, min(ALTO - RADIO, y))
+
+        # ---------------------------------------------------------
+        #  3. DIBUJO (el orden importa: lo último se dibuja ENCIMA)
+        # ---------------------------------------------------------
+        pantalla.fill((0, 128, 64))  # fondo verde: borra todo lo de la vuelta anterior
+
+        # Franja negra del HUD: (x, y, ancho, alto)
+        pygame.draw.rect(pantalla, (0, 0, 0), (0, 0, ANCHO, ALTO_HUD))
+
+        # Barra de stamina: primero el fondo gris (siempre completo)...
+        pygame.draw.rect(
+            pantalla,
+            BARRA_FONDO_COLOR,
+            (10, 80, BARRA_STAMINA_ANCHO, BARRA_STAMINA_ALTO),
+        )
+        # ...y encima la parte de color. Su ancho es proporcional a la stamina:
+        # (stamina / máximo) da un número entre 0 y 1, y eso por el ancho total
+        ancho_stamina = (stamina_jugador / STAMINA_MAX) * BARRA_STAMINA_ANCHO
+        pygame.draw.rect(
+            pantalla, color_stamina, (10, 80, ancho_stamina, BARRA_STAMINA_ALTO)
+        )
+
+        # Moneda y jugador
+        pygame.draw.circle(pantalla, MONEDA_COLOR, (moneda_x, moneda_y), RADIO_MONEDA)
+        pygame.draw.circle(pantalla, color_stamina, (x, y), RADIO)
+
+        # cambio de estado cuando se acaba el tiempo
+        if tiempo_restante <= 0:
+            estado = "fin"
+
+        # Textos: render convierte el texto en imagen; blit la pega en la pantalla.
+        # str() convierte el número en texto para poder unirlo con "Puntos: "
+        texto = fuente.render("Puntos: " + str(puntos), True, (255, 255, 255))
+        texto_tiempo = fuente.render(
+            "Tiempo: " + str(tiempo_restante), True, (255, 255, 255)
+        )
+        pantalla.blit(texto, (10, 10))
+        pantalla.blit(texto_tiempo, (10, 50))
 
     # --- Pantalla de fin (cuando se acaba el tiempo) ---
-    if tiempo_restante <= 0:
+    elif estado == "fin":
         texto_final = fuente.render(
             "¡Tiempo terminado! Puntos: " + str(puntos), True, (255, 0, 0)
         )
@@ -187,10 +211,8 @@ while corriendo:
 
         # Reiniciar: todo vuelve a como estaba al empezar
         if teclas[pygame.K_r]:
-            puntos = 0
-            stamina_jugador = STAMINA_MAX
-            inicio_tiempo = pygame.time.get_ticks()  # el cronómetro vuelve a empezar
-            x, y = ANCHO // 2, ALTO // 2
+            estado = "menu"
+            
 
     pygame.display.flip()  # muestra en la ventana todo lo que se dibujó
     reloj.tick(60)  # espera lo necesario para ir a 60 vueltas por segundo
