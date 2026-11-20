@@ -91,13 +91,16 @@ while corriendo:
                 (ANCHO // 2 - texto_linea.get_width() // 2, YDESC_TEXTO + i * 40),
             )
 
-            pantalla.blit(
-                titulo,
-                (
-                    ANCHO // 2 - titulo.get_width() // 2,
-                    ALTO // 4 - titulo.get_height() // 2,
-                ),
-            )
+        # Título: fuera del for, para que se dibuje UNA vez y no una por cada instrucción
+        pantalla.blit(
+            titulo,
+            (
+                ANCHO // 2 - titulo.get_width() // 2,
+                ALTO // 4 - titulo.get_height() // 2,
+            ),
+        )
+
+        # "PRESIONA ESPACIO" parpadea: se dibuja solo cuando parpadeo vale 0
         if parpadeo == 0:
             pantalla.blit(
                 texto,
@@ -125,8 +128,16 @@ while corriendo:
         tiempo_restante = TIEMPO_LIMITE - segundos_jugados
 
         # --- Stamina ---
-        # Solo puede correr si aprieta Shift Y le queda stamina
-        if teclas[pygame.K_LSHIFT] and stamina_jugador > 0:
+        # ¿Está apretando alguna flecha? ("or" es como el || de Java)
+        moviendose = (
+            teclas[pygame.K_LEFT]
+            or teclas[pygame.K_RIGHT]
+            or teclas[pygame.K_UP]
+            or teclas[pygame.K_DOWN]
+        )
+        # Solo corre (y gasta stamina) si aprieta Shift, le queda stamina
+        # Y se está moviendo. Quieto con Shift no gasta nada.
+        if teclas[pygame.K_LSHIFT] and stamina_jugador > 0 and moviendose:
             velocidad = 10  # corriendo
             # Gasta stamina, pero max(..., 0) evita que baje de 0
             stamina_jugador = max(stamina_jugador - 1, 0)
